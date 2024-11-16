@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { CircleDollarSign, Loader2, Plus } from 'lucide-react';
 import * as z from 'zod';
 
 import Button from '@/common/components/base/Button';
@@ -17,21 +18,48 @@ import {
     FormMessage,
 } from '@/common/components/base/Form/form';
 import Input from '@/common/components/base/Input';
+import { Skeleton } from '@/common/components/base/Skeleton';
 import Typography from '@/common/components/base/Typography';
 import { Shop } from '@/common/interface/shop';
 import { apiClient } from '@/libs/axiosConfig';
+
+const ShopSkeleton = () => (
+    <div className="flex items-center gap-2 rounded-sm border p-4 max-sm:flex-col">
+        <Skeleton className="h-6 w-32" /> {/* Shop name */}
+        <Skeleton className="h-4 w-96 max-sm:w-full" /> {/* Address */}
+        <div className="flex flex-row items-center gap-0 max-sm:w-full">
+            {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton key={index} className="mx-0.5 h-5 w-5 rounded-full" />
+            ))}
+        </div>
+        <div className="ml-auto flex flex-row items-center gap-2">
+            <Skeleton className="h-8 w-16" /> {/* Edit button */}
+            <Skeleton className="h-8 w-16" /> {/* Delete button */}
+        </div>
+    </div>
+);
 
 const ShopManagementPage = () => {
     const [shops, setShops] = useState<Shop[]>([]);
     const [open, setOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [currentShop, setCurrentShop] = useState<Shop | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
     useEffect(() => {
         // Fetch shop data
         const fetchData = async () => {
-            const response = await apiClient.get('/shops');
-            setShops(response.data.data);
+            try {
+                setIsLoading(true);
+                const response = await apiClient.get('/shops');
+                setShops(response.data.data);
+            } catch (error) {
+                console.error('Failed to fetch shops:', error);
+            } finally {
+                setIsLoading(false);
+            }
         };
 
         fetchData();
@@ -83,117 +111,159 @@ const ShopManagementPage = () => {
     };
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        if (editMode && currentShop) {
-            // Update existing shop
-            await apiClient.put(`/shops/${currentShop.id}`, {
-                name: values.name,
-                address: values.address,
-                priceLevel: values.priceLevel,
-                province: values.province,
-                postalcode: values.postalcode,
-                tel: values.tel,
-                picture: values.picture,
-            });
+        try {
+            setIsSubmitting(true);
+            if (editMode && currentShop) {
+                // Update existing shop
+                await apiClient.put(`/shops/${currentShop.id}`, {
+                    name: values.name,
+                    address: values.address,
+                    priceLevel: values.priceLevel,
+                    province: values.province,
+                    postalcode: values.postalcode,
+                    tel: values.tel,
+                    picture: values.picture,
+                });
 
-            setShops((prev) =>
-                prev.map((shop) =>
-                    shop.id === currentShop.id
-                        ? {
-                              ...shop,
-                              ...values,
-                              priceLevel: parseInt(values.priceLevel),
-                          }
-                        : shop
-                )
-            );
-        } else {
-            // Create new shop
-            const response = await apiClient.post('/shops', values);
-            setShops((prev) => [...prev, response.data]);
-            window.location.reload();
+                setShops((prev) =>
+                    prev.map((shop) =>
+                        shop.id === currentShop.id
+                            ? {
+                                  ...shop,
+                                  ...values,
+                                  priceLevel: parseInt(values.priceLevel),
+                              }
+                            : shop
+                    )
+                );
+            } else {
+                // Create new shop
+                const response = await apiClient.post('/shops', values);
+                setShops((prev) => [...prev, response.data]);
+                window.location.reload();
+            }
+
+            form.reset();
+            setOpen(false);
+        } catch (error) {
+            console.error('Failed to submit shop:', error);
+        } finally {
+            setIsSubmitting(false);
         }
+    };
 
-        form.reset();
-        setOpen(false);
+    const handleDelete = async (shopId: string) => {
+        try {
+            setIsDeleting(shopId);
+            await apiClient.delete(`/shops/${shopId}`);
+            setShops((prev) => prev.filter((s) => s.id !== shopId));
+        } catch (error) {
+            console.error('Failed to delete shop:', error);
+        } finally {
+            setIsDeleting(null);
+        }
     };
 
     return (
         <div className="mx-auto flex max-w-[1000px] flex-col gap-2">
-            <div className="flex w-full flex-row items-center gap-2 max-md:flex-col">
-                <Typography variant="h2">Shop Management</Typography>
+            <div className="mb-4 flex w-full flex-row items-center gap-2 max-md:flex-col">
+                <>
+                    <Typography
+                        variant="h2"
+                        className="text-2xl font-bold text-primary"
+                    >
+                        Shop Management
+                    </Typography>
 
-                <Button size="sm" onClick={openCreateDialog}>
-                    + Create Shop
-                </Button>
+                    <Button
+                        size="sm"
+                        onClick={openCreateDialog}
+                        className="ml-auto"
+                        disabled={isLoading}
+                    >
+                        <span className="mr-2">
+                            <Plus
+                                color={
+                                    isLoading ? 'rgb(203, 213, 225)' : '#fff'
+                                }
+                                size={16}
+                                strokeWidth={3}
+                            />
+                        </span>
+                        Create Shop
+                    </Button>
+                </>
             </div>
 
-            {shops.map((shop) => (
-                <div
-                    className="flex gap-2 rounded-sm border p-4 max-lg:flex-col"
-                    key={shop.id}
-                >
-                    <Typography variant="h3">{shop.name}</Typography>
+            {isLoading ? (
+                // Skeleton loading state
+                <>
+                    <ShopSkeleton />
+                    <ShopSkeleton />
+                    <ShopSkeleton />
+                </>
+            ) : shops.length === 0 ? (
+                <div className="flex items-center justify-center rounded-sm border p-8">
                     <Typography variant="body1" className="text-medium">
-                        {shop.address}
-                    </Typography>
-                    <Typography variant="body1" className="text-medium">
-                        {shop.province}
-                    </Typography>
-                    <Typography variant="body1" className="text-medium">
-                        {shop.postalcode}
-                    </Typography>
-                    <Typography variant="body1" className="text-medium">
-                        {shop.tel}
-                    </Typography>
-
-                    <div className="flex flex-row items-center gap-0">
-                        {Array.from({
-                            length: shop.priceLevel,
-                        }).map((_, index) => (
-                            <svg
-                                width="20"
-                                height="20"
-                                viewBox="0 0 50 48"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                                key={shop.id + ' ' + index}
-                            >
-                                <path
-                                    d="M23.0629 5.49809C23.6416 4.19964 23.9311 3.55041 24.3341 3.35049C24.6841 3.17679 25.0951 3.17679 25.4451 3.35049C25.8481 3.55041 26.1376 4.19964 26.7164 5.49809L31.3264 15.8404C31.4976 16.2243 31.5831 16.4162 31.7156 16.5632C31.8326 16.6932 31.9759 16.7972 32.1356 16.8684C32.3164 16.9489 32.5254 16.971 32.9434 17.0151L44.2041 18.2036C45.6179 18.3528 46.3246 18.4274 46.6394 18.7489C46.9126 19.0281 47.0396 19.4191 46.9826 19.8057C46.9171 20.2507 46.3891 20.7265 45.3331 21.6782L36.9214 29.2587C36.6094 29.54 36.4531 29.6807 36.3544 29.852C36.2669 30.0037 36.2121 30.172 36.1939 30.346C36.1731 30.5427 36.2166 30.7482 36.3039 31.1595L38.6534 42.2362C38.9484 43.627 39.0959 44.3222 38.8874 44.7207C38.7061 45.0672 38.3736 45.3087 37.9884 45.374C37.5449 45.449 36.9291 45.094 35.6976 44.3837L25.8889 38.7262C25.5249 38.5162 25.3429 38.4115 25.1494 38.3702C24.9781 38.334 24.8011 38.334 24.6299 38.3702C24.4364 38.4115 24.2544 38.5162 23.8904 38.7262L14.0817 44.3837C12.8502 45.094 12.2345 45.449 11.791 45.374C11.4057 45.3087 11.0731 45.0672 10.892 44.7207C10.6835 44.3222 10.831 43.627 11.126 42.2362L13.4754 31.1595C13.5626 30.7482 13.6062 30.5427 13.5855 30.346C13.5672 30.172 13.5125 30.0037 13.425 29.852C13.3261 29.6807 13.17 29.54 12.8578 29.2587L4.44629 21.6782C3.39026 20.7265 2.86224 20.2507 2.79659 19.8057C2.73959 19.4191 2.86661 19.0281 3.13996 18.7489C3.45466 18.4274 4.16154 18.3528 5.57529 18.2036L16.836 17.0151C17.254 16.971 17.4629 16.9489 17.6436 16.8684C17.8035 16.7972 17.9466 16.6932 18.0638 16.5632C18.1962 16.4162 18.2817 16.2243 18.4528 15.8404L23.0629 5.49809Z"
-                                    fill="#EBCF00"
-                                    stroke="#EBCF00"
-                                    stroke-width="5"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                />
-                            </svg>
-                        ))}
-                    </div>
-                    <Typography variant="body1" className="text-medium ml-auto">
-                        <div className="ml-2 flex flex-row items-center gap-0">
-                            <Button
-                                size="sm"
-                                onClick={() => openEditDialog(shop)}
-                            >
-                                Edit
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                className="ml-2"
-                                onClick={async () => {
-                                    await apiClient.delete(`/shops/${shop.id}`);
-                                    setShops((prev) =>
-                                        prev.filter((s) => s.id !== shop.id)
-                                    );
-                                }}
-                            >
-                                Delete
-                            </Button>
-                        </div>
+                        No shops found. Create one to get started!
                     </Typography>
                 </div>
-            ))}
+            ) : (
+                shops.map((shop) => (
+                    <div
+                        className="flex items-center gap-2 rounded-sm border p-4 max-sm:flex-col"
+                        key={shop.id}
+                    >
+                        <Typography variant="h3" className="font-bold">
+                            {shop.name}
+                        </Typography>
+                        <Typography variant="body1" className="text-medium">
+                            {shop.address}, {shop.province}, {shop.postalcode},{' '}
+                            {shop.tel}
+                        </Typography>
+
+                        <div className="flex flex-row items-center gap-0 max-sm:w-full">
+                            {Array.from({
+                                length: shop.priceLevel,
+                            }).map((_, index) => (
+                                <CircleDollarSign
+                                    key={index}
+                                    color="#11aa11"
+                                    size={20}
+                                />
+                            ))}
+                        </div>
+                        <Typography
+                            variant="body1"
+                            className="ml-auto text-medium"
+                        >
+                            <div className="ml-2 flex flex-row items-center gap-0">
+                                <Button
+                                    size="sm"
+                                    className="bg-slate-400 hover:bg-slate-500"
+                                    onClick={() => openEditDialog(shop)}
+                                    disabled={isDeleting === shop.id}
+                                >
+                                    Edit
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="ml-2"
+                                    onClick={() => handleDelete(shop.id)}
+                                    disabled={isDeleting === shop.id}
+                                >
+                                    {isDeleting === shop.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        'Delete'
+                                    )}
+                                </Button>
+                            </div>
+                        </Typography>
+                    </div>
+                ))
+            )}
 
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent>
@@ -212,6 +282,7 @@ const ShopManagementPage = () => {
                                             <Input
                                                 placeholder="Shop Name"
                                                 {...field}
+                                                disabled={isSubmitting}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -228,6 +299,7 @@ const ShopManagementPage = () => {
                                             <Input
                                                 placeholder="Shop Address"
                                                 {...field}
+                                                disabled={isSubmitting}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -245,6 +317,7 @@ const ShopManagementPage = () => {
                                                 type="number"
                                                 placeholder="0"
                                                 {...field}
+                                                disabled={isSubmitting}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -261,6 +334,7 @@ const ShopManagementPage = () => {
                                             <Input
                                                 placeholder="Province"
                                                 {...field}
+                                                disabled={isSubmitting}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -277,6 +351,7 @@ const ShopManagementPage = () => {
                                             <Input
                                                 placeholder="Postal Code"
                                                 {...field}
+                                                disabled={isSubmitting}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -294,6 +369,7 @@ const ShopManagementPage = () => {
                                                 placeholder="Phone Number"
                                                 type="number"
                                                 {...field}
+                                                disabled={isSubmitting}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -310,6 +386,7 @@ const ShopManagementPage = () => {
                                             <Input
                                                 placeholder="Picture URL"
                                                 {...field}
+                                                disabled={isSubmitting}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -320,11 +397,23 @@ const ShopManagementPage = () => {
                                 <Button
                                     variant="outline"
                                     onClick={() => setOpen(false)}
+                                    disabled={isSubmitting}
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit">
-                                    {editMode ? 'Update Shop' : 'Create Shop'}
+                                <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            {editMode
+                                                ? 'Updating...'
+                                                : 'Creating...'}
+                                        </>
+                                    ) : editMode ? (
+                                        'Update Shop'
+                                    ) : (
+                                        'Create Shop'
+                                    )}
                                 </Button>
                             </div>
                         </form>

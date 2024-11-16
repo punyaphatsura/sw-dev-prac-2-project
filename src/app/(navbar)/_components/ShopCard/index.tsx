@@ -1,14 +1,41 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAtomValue } from 'jotai';
+import { CircleDollarSign } from 'lucide-react';
 import { motion } from 'motion/react';
+import { z } from 'zod';
 
+import { userAtom } from '@/atom/user-atom';
+import Button from '@/common/components/base/Button';
 import { Dialog, DialogContent } from '@/common/components/base/Dialog/dialog';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@/common/components/base/Form/form';
+import Input from '@/common/components/base/Input';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from '@/common/components/base/Select';
 import Typography from '@/common/components/base/Typography';
 import { Shop } from '@/common/interface/shop';
+import { apiClient } from '@/libs/axiosConfig';
 
 interface ShopCardProps {
     imageUrl: string;
@@ -18,65 +45,213 @@ interface ShopCardProps {
 
 const ShopCard = ({ imageUrl, id, shop }: ShopCardProps) => {
     const [open, setOpen] = useState(false);
+    const [showBookForm, setShowBookForm] = useState(false);
+
+    const [error, setError] = useState('');
+    const user = useAtomValue(userAtom);
+
+    const { push } = useRouter();
+
+    const formSchema = z.object({
+        bookingDate: z
+            .string()
+            .nonempty('Booking date is required')
+            .refine((val) => !isNaN(Date.parse(val)), 'Invalid date format'),
+        // must be 60 90 120
+        serviceMinute: z
+            .string()
+            .refine((val) => ['60', '90', '120'].includes(val), {
+                message: 'Service minute must be 60, 90, or 120',
+            }),
+        shopId: z.string(),
+    });
+
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        console.log('values', values);
+        try {
+            // Create new booking
+            const response = await apiClient.post(
+                `/shops/${values.shopId}/bookings`,
+                {
+                    bookingDate: values.bookingDate,
+                    serviceMinute: Number(values.serviceMinute),
+                    createdAt: new Date().toISOString(),
+                }
+            );
+
+            form.reset();
+            setOpen(false);
+            push('/back-office/booking');
+        } catch (err: any) {
+            if (
+                err.response.data.message ===
+                `The user with ID ${user?.id} has already made 3 bookings`
+            ) {
+                setError('Cannot create booking, reservation is maximum at 3');
+                return;
+            }
+            console.error('Error submitting booking:', err);
+            setError('Something went wrong creating booking');
+        }
+    };
+
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            bookingDate: '',
+            serviceMinute: '60',
+            shopId: shop.id,
+        },
+    });
+
     return (
         <>
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="h-[90vh] min-w-[90vw] outline-none">
-                    <div className="flex flex-col items-center gap-2 px-4">
-                        <motion.div
-                            className="flex h-fit w-full max-w-[400px] overflow-hidden rounded-xl border bg-black"
-                            layoutId={id}
-                        >
-                            <Image
-                                src={imageUrl}
-                                alt="logo"
-                                className="flex w-full object-cover"
-                                width={1000}
-                                height={1000}
-                            />
-                        </motion.div>
+                <DialogContent className="h-[90vh] min-w-[90vw] overflow-hidden py-0 outline-none">
+                    <div className="h-full overflow-y-scroll pb-2 pt-12">
+                        <div className="flex flex-1 flex-col items-center gap-2 gap-y-8 px-4">
+                            <motion.div
+                                className="flex max-h-[300px] w-full max-w-[400px] overflow-hidden rounded-xl border bg-black"
+                                layoutId={id}
+                            >
+                                <Image
+                                    src={imageUrl}
+                                    alt="logo"
+                                    className="w-full object-cover"
+                                    width={1000}
+                                    height={1000}
+                                />
+                            </motion.div>
 
-                        <Typography variant="h3" className="font-semibold">
-                            {shop.name}
-                        </Typography>
+                            <Typography
+                                variant="h3"
+                                className="mb-2 text-2xl font-semibold"
+                            >
+                                {shop.name}
+                            </Typography>
 
-                        <Typography
-                            variant="body1"
-                            className="w-[400px] max-w-[80vw]"
-                        >
-                            address: {shop.address}
-                            <br />
-                            province: {shop.province}
-                            <br />
-                            postal code: {shop.postalcode}
-                            <br />
-                            <div className="flex flex-row">
-                                priceLevel:
-                                <div className="ml-2 flex flex-row gap-0">
-                                    {Array.from({
-                                        length: shop.priceLevel,
-                                    }).map((_, index) => (
-                                        <svg
-                                            width="20"
-                                            height="20"
-                                            viewBox="0 0 50 48"
-                                            fill="none"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            key={shop.id + ' ' + index}
-                                        >
-                                            <path
-                                                d="M23.0629 5.49809C23.6416 4.19964 23.9311 3.55041 24.3341 3.35049C24.6841 3.17679 25.0951 3.17679 25.4451 3.35049C25.8481 3.55041 26.1376 4.19964 26.7164 5.49809L31.3264 15.8404C31.4976 16.2243 31.5831 16.4162 31.7156 16.5632C31.8326 16.6932 31.9759 16.7972 32.1356 16.8684C32.3164 16.9489 32.5254 16.971 32.9434 17.0151L44.2041 18.2036C45.6179 18.3528 46.3246 18.4274 46.6394 18.7489C46.9126 19.0281 47.0396 19.4191 46.9826 19.8057C46.9171 20.2507 46.3891 20.7265 45.3331 21.6782L36.9214 29.2587C36.6094 29.54 36.4531 29.6807 36.3544 29.852C36.2669 30.0037 36.2121 30.172 36.1939 30.346C36.1731 30.5427 36.2166 30.7482 36.3039 31.1595L38.6534 42.2362C38.9484 43.627 39.0959 44.3222 38.8874 44.7207C38.7061 45.0672 38.3736 45.3087 37.9884 45.374C37.5449 45.449 36.9291 45.094 35.6976 44.3837L25.8889 38.7262C25.5249 38.5162 25.3429 38.4115 25.1494 38.3702C24.9781 38.334 24.8011 38.334 24.6299 38.3702C24.4364 38.4115 24.2544 38.5162 23.8904 38.7262L14.0817 44.3837C12.8502 45.094 12.2345 45.449 11.791 45.374C11.4057 45.3087 11.0731 45.0672 10.892 44.7207C10.6835 44.3222 10.831 43.627 11.126 42.2362L13.4754 31.1595C13.5626 30.7482 13.6062 30.5427 13.5855 30.346C13.5672 30.172 13.5125 30.0037 13.425 29.852C13.3261 29.6807 13.17 29.54 12.8578 29.2587L4.44629 21.6782C3.39026 20.7265 2.86224 20.2507 2.79659 19.8057C2.73959 19.4191 2.86661 19.0281 3.13996 18.7489C3.45466 18.4274 4.16154 18.3528 5.57529 18.2036L16.836 17.0151C17.254 16.971 17.4629 16.9489 17.6436 16.8684C17.8035 16.7972 17.9466 16.6932 18.0638 16.5632C18.1962 16.4162 18.2817 16.2243 18.4528 15.8404L23.0629 5.49809Z"
-                                                fill="#EBCF00"
-                                                stroke="#EBCF00"
-                                                stroke-width="5"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                            />
-                                        </svg>
-                                    ))}
+                            <div className="flex w-[300px] max-w-[80vw] flex-col gap-y-2">
+                                <Typography variant="body1">
+                                    <span className="font-bold">Address:</span>{' '}
+                                    {shop.address}
+                                </Typography>
+                                <Typography variant="body1">
+                                    <span className="font-bold">Province:</span>{' '}
+                                    {shop.province}
+                                </Typography>
+                                <Typography variant="body1">
+                                    <span className="font-bold">
+                                        Postal code:
+                                    </span>{' '}
+                                    {shop.postalcode}
+                                </Typography>
+                                <div className="flex flex-row">
+                                    <span className="font-bold">Price:</span>
+                                    <div className="ml-2 flex flex-row gap-0">
+                                        {Array.from({
+                                            length: shop.priceLevel,
+                                        }).map((_) => (
+                                            <CircleDollarSign color="#11aa11" />
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                        </Typography>
+                            {showBookForm ? (
+                                <Form {...form}>
+                                    <form
+                                        onSubmit={form.handleSubmit(onSubmit)}
+                                        className="space-y-4"
+                                    >
+                                        <FormField
+                                            control={form.control}
+                                            name="bookingDate"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Booking Date
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="datetime-local"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="serviceMinute"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Service Duration
+                                                        (Minutes)
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Select
+                                                            {...field}
+                                                            onValueChange={(
+                                                                e
+                                                            ) => {
+                                                                field.onChange(
+                                                                    e
+                                                                );
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Select a fruit" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-white">
+                                                                <SelectGroup>
+                                                                    <SelectItem
+                                                                        value="60"
+                                                                        className="transition-colors hover:bg-slate-100"
+                                                                    >
+                                                                        60
+                                                                    </SelectItem>
+                                                                    <SelectItem
+                                                                        value="90"
+                                                                        className="transition-colors hover:bg-slate-100"
+                                                                    >
+                                                                        90
+                                                                    </SelectItem>
+                                                                    <SelectItem
+                                                                        value="120"
+                                                                        className="transition-colors hover:bg-slate-100"
+                                                                    >
+                                                                        120
+                                                                    </SelectItem>
+                                                                </SelectGroup>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        {error !== '' && (
+                                            <Typography className="text-right text-sm text-system-error">
+                                                {error}
+                                            </Typography>
+                                        )}
+                                        <div className="flex justify-end gap-2">
+                                            <Button type="submit">Book</Button>
+                                        </div>
+                                    </form>
+                                </Form>
+                            ) : (
+                                <Button
+                                    className="w-full max-w-[400px]"
+                                    onClick={() => {
+                                        setShowBookForm(true);
+                                    }}
+                                >
+                                    Book this shop
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>
