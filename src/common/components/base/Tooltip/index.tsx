@@ -1,25 +1,29 @@
-import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import * as React from 'react'
+import * as React from 'react';
 
-import { cn } from '@/common/utils/tailwind'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
-const TooltipProvider = TooltipPrimitive.Provider
+import { cn } from '@/libs/utils';
 
-const Tooltip = TooltipPrimitive.Root
+const TooltipProvider = TooltipPrimitive.Provider;
 
-const TooltipTrigger = TooltipPrimitive.Trigger
+const Tooltip = TooltipPrimitive.Root;
+
+const TooltipTrigger = TooltipPrimitive.Trigger;
 
 const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+    React.ElementRef<typeof TooltipPrimitive.Content>,
+    React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => (
-  <TooltipPrimitive.Content
-    ref={ref}
-    sideOffset={sideOffset}
-    className={cn('bg border rounded-md w-[345px] max-w-[90vw] py-2 px-4 shadow-lg body2 text-high', className)}
-    {...props}
-  />
-))
-TooltipContent.displayName = TooltipPrimitive.Content.displayName
+    <TooltipPrimitive.Content
+        ref={ref}
+        sideOffset={sideOffset}
+        className={cn(
+            'body2 w-[345px] max-w-[90vw] rounded-md border bg px-4 py-2 text-high shadow-lg',
+            className
+        )}
+        {...props}
+    />
+));
+TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
-export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger }
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
