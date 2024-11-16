@@ -6,11 +6,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAtom, useSetAtom } from 'jotai';
 import * as z from 'zod';
 
-import { token } from '@/atom/token-atom';
-import { userAtom } from '@/atom/user-atom';
 import Button from '@/common/components/base/Button';
 import {
     Form,
@@ -28,9 +25,6 @@ const RegisterAuthForm = () => {
     const { push } = useRouter();
 
     const [error, setError] = useState(searchParam.get('errorMessage'));
-    const [tk, setTk] = useAtom(token);
-
-    const setUser = useSetAtom(userAtom);
 
     const formSchema = z.object({
         name: z.string().min(1, { message: 'Name is required' }),

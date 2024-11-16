@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import * as z from 'zod';
 
 import { token } from '@/atom/token-atom';
@@ -26,7 +26,7 @@ const AuthForm = () => {
     const searchParam = useSearchParams();
 
     const [error, setError] = useState(searchParam.get('errorMessage'));
-    const [tk, setTk] = useAtom(token);
+    const setTk = useSetAtom(token);
 
     // const setUser = useSetAtom(userAtom);
 
