@@ -59,18 +59,6 @@ const AuthForm = () => {
             if (response.status === 200) {
                 localStorage.setItem('token', response.data.token);
                 setTk(response.data.token);
-                // await apiClient.get('/auth/me').then((res) => {
-                //     console.log(res.data);
-                //     setUser({
-                //         id: res.data.data._id,
-                //         name: res.data.data.name,
-                //         email: res.data.data.email,
-                //         tel: res.data.data.tel,
-                //         role: res.data.data.role,
-                //     });
-                // });
-                console.log(tk);
-
                 window.location.href = '/';
             } else {
                 setError('Something went wrong please try again later');

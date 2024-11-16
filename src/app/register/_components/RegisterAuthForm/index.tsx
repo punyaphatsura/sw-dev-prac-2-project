@@ -74,36 +74,8 @@ const RegisterAuthForm = () => {
                 createdAt: new Date().toISOString(),
             });
             if (response.data.success) {
-                await apiClient
-                    .get('/auth/me', {
-                        headers: {
-                            Authorization: `Bearer ${response.data.token}`,
-                        },
-                    })
-                    .then((res) => {
-                        console.log(res.data);
-                        setUser({
-                            id: res.data.data._id,
-                            name: res.data.data.name,
-                            email: res.data.data.email,
-                            tel: res.data.data.tel,
-                            role: res.data.data.role,
-                        });
-                    });
-                console.log(tk);
-                setTk(response.data.token);
-
-                push('/');
+                push('/auth');
             }
-            // Handle form submission
-            // Example:
-            // if (await register(values)) {
-            //     const redirectUrl = searchParam.get('redirectUrl');
-            //     window.location.href =
-            //         redirectUrl && redirectUrl.length > 1
-            //             ? redirectUrl
-            //             : '/profile';
-            // } else setError('Registration failed, please try again');
         } catch (e) {
             setError('Something went wrong, please try again later');
             console.error(e);
