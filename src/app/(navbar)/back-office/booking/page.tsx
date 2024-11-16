@@ -133,7 +133,7 @@ const BookingManagementPage = () => {
     };
 
     const BookingSkeleton = () => (
-        <div className="flex rounded-sm border p-4">
+        <div className="flex items-center rounded-sm border p-4">
             <Skeleton className="h-6 w-2/3 rounded bg-gray-200" />
             <div className="ml-auto flex gap-2">
                 <Skeleton className="h-8 w-16 rounded bg-gray-200" />
@@ -191,15 +191,20 @@ const BookingManagementPage = () => {
                 ) : (
                     bookings.map((booking) => (
                         <div
-                            className="flex rounded-sm border p-4"
+                            className="flex items-center rounded-sm border p-4"
                             key={booking._id}
                         >
-                            <Typography variant="h3">
-                                {`Booking on ${new Date(
-                                    booking.bookingDate
-                                ).toLocaleString()} - ${
-                                    booking.serviceMinute
-                                } mins`}
+                            <Typography variant="h4">
+                                {`Booking on ${new Date(booking.bookingDate)
+                                    .toLocaleString(undefined, {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                    })
+                                    .replace(
+                                        /(\d{2})\/(\d{2})\/(\d{4})/,
+                                        '$2/$1/$3'
+                                    )} - ${booking.serviceMinute} mins`}
                             </Typography>
                             <div className="ml-auto flex gap-2">
                                 <Button
@@ -236,7 +241,7 @@ const BookingManagementPage = () => {
                                         <FormLabel>Booking Date</FormLabel>
                                         <FormControl>
                                             <Input
-                                                type="datetime-local"
+                                                type="date"
                                                 {...field}
                                                 disabled={isSubmitting}
                                             />

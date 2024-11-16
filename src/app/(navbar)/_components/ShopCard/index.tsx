@@ -172,7 +172,7 @@ const ShopCard = ({ imageUrl, id, shop }: ShopCardProps) => {
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Input
-                                                            type="datetime-local"
+                                                            type="date"
                                                             {...field}
                                                         />
                                                     </FormControl>
