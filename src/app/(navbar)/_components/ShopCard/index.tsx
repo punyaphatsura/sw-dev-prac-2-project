@@ -7,12 +7,10 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAtomValue } from 'jotai';
 import { CircleDollarSign } from 'lucide-react';
 import { motion } from 'motion/react';
 import { z } from 'zod';
 
-import { userAtom } from '@/atom/user-atom';
 import Button from '@/common/components/base/Button';
 import { Dialog, DialogContent } from '@/common/components/base/Dialog/dialog';
 import {
@@ -29,7 +27,6 @@ import {
     SelectContent,
     SelectGroup,
     SelectItem,
-    SelectLabel,
     SelectTrigger,
     SelectValue,
 } from '@/common/components/base/Select';
@@ -48,7 +45,6 @@ const ShopCard = ({ imageUrl, id, shop }: ShopCardProps) => {
     const [showBookForm, setShowBookForm] = useState(false);
 
     const [error, setError] = useState('');
-    const user = useAtomValue(userAtom);
 
     const { push } = useRouter();
 
@@ -70,26 +66,16 @@ const ShopCard = ({ imageUrl, id, shop }: ShopCardProps) => {
         console.log('values', values);
         try {
             // Create new booking
-            const response = await apiClient.post(
-                `/shops/${values.shopId}/bookings`,
-                {
-                    bookingDate: values.bookingDate,
-                    serviceMinute: Number(values.serviceMinute),
-                    createdAt: new Date().toISOString(),
-                }
-            );
+            await apiClient.post(`/shops/${values.shopId}/bookings`, {
+                bookingDate: values.bookingDate,
+                serviceMinute: Number(values.serviceMinute),
+                createdAt: new Date().toISOString(),
+            });
 
             form.reset();
             setOpen(false);
             push('/back-office/booking');
-        } catch (err: any) {
-            if (
-                err.response.data.message ===
-                `The user with ID ${user?.id} has already made 3 bookings`
-            ) {
-                setError('Cannot create booking, reservation is maximum at 3');
-                return;
-            }
+        } catch (err) {
             console.error('Error submitting booking:', err);
             setError('Something went wrong creating booking');
         }
@@ -150,8 +136,11 @@ const ShopCard = ({ imageUrl, id, shop }: ShopCardProps) => {
                                     <div className="ml-2 flex flex-row gap-0">
                                         {Array.from({
                                             length: shop.priceLevel,
-                                        }).map((_) => (
-                                            <CircleDollarSign color="#11aa11" />
+                                        }).map((_, idx) => (
+                                            <CircleDollarSign
+                                                key={idx}
+                                                color="#11aa11"
+                                            />
                                         ))}
                                     </div>
                                 </div>

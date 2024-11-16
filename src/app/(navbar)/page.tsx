@@ -25,6 +25,7 @@ export default function Home() {
                 setShops(response.data.data);
                 setError(null);
             } catch (err) {
+                console.error(err);
                 setError('Failed to load shops. Please try again later.');
             } finally {
                 setIsLoading(false);

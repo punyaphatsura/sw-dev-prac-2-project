@@ -61,7 +61,7 @@ const BookingManagementPage = () => {
 
     useEffect(() => {
         form.setValue('userId', user?.id ?? '');
-    }, [user]);
+    }, [user, form]);
 
     useEffect(() => {
         const fetchBookings = async () => {

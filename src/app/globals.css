@@ -7,10 +7,6 @@
     display: none;
 }
 
-:root {
-    background-color: #cbdceb;
-}
-
 /* Disable blue highlight on button click */
 button {
     -webkit-tap-highlight-color: transparent;
