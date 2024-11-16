@@ -7,6 +7,10 @@ import AuthForm from './_components/AuthForm';
 const AuthPage = () => {
     return (
         <div className="absolute left-1/2 top-1/2 flex h-fit max-h-[90vh] w-fit min-w-[350px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 transform flex-col gap-6 rounded-md">
+            <p className="text-center text-2xl font-bold">
+                Welcome to Massage shop
+            </p>
+            <p className="text-center text-sm">Login to book your massage</p>
             <div className="rounded-md border-[1px] p-[24px]">
                 <AuthForm />
             </div>
