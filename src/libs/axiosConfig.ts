@@ -1,11 +1,17 @@
 import axios from 'axios';
 
+let token = '';
+
+if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token') || '';
+}
+
 export const apiClient = axios.create({
     baseURL:
         process.env.NEXT_PUBLIC_API_ENDPOINT ||
-        'https://temp1.jackpyp.xyz/api/v1',
+        'https://6701-project07-massage-shop.vercel.app/api/v1',
     timeout: 80000,
     headers: {
-        Authorization: 'Bearer ' + localStorage.getItem('token'),
+        Authorization: 'Bearer ' + token,
     },
 });
