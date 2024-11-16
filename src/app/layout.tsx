@@ -1,3 +1,4 @@
+import { Provider as JotaiProvider } from 'jotai';
 import type { Metadata } from 'next';
 
 import QueryProvider from '@/providers/query-provider';
@@ -16,17 +17,11 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
-            <head>
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" />
-                <link
-                    href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@100..900&display=swap"
-                    rel="stylesheet"
-                />
-            </head>
-            <QueryProvider>
-                <body className={`antialiased`}>{children}</body>
-            </QueryProvider>
+            <JotaiProvider>
+                <QueryProvider>
+                    <body className={`antialiased`}>{children}</body>
+                </QueryProvider>
+            </JotaiProvider>
         </html>
     );
 }
