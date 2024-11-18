@@ -23,6 +23,7 @@ import Input from '@/common/components/base/Input';
 import { Skeleton } from '@/common/components/base/Skeleton';
 import Typography from '@/common/components/base/Typography';
 import { Booking } from '@/common/interface/booking';
+import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/libs/axiosConfig';
 
 const BookingManagementPage = () => {
@@ -31,7 +32,10 @@ const BookingManagementPage = () => {
     const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+
+    const { toast } = useToast();
 
     const user = useAtomValue(userAtom);
 
@@ -85,7 +89,6 @@ const BookingManagementPage = () => {
             setIsSubmitting(true);
             if (editingBooking) {
                 await apiClient.put(`/bookings/${editingBooking._id}`, values);
-                window.location.reload();
             } else {
                 const response = await apiClient.post(
                     `/shops/${values.shopId}/bookings`,
@@ -97,10 +100,23 @@ const BookingManagementPage = () => {
                 );
                 setBookings((prev) => [...prev, response.data]);
             }
+            const response = await apiClient.get('/bookings');
+            setBookings(response.data.data);
+
+            toast({
+                variant: 'success',
+                title: editingBooking
+                    ? 'Update booking success'
+                    : 'Booking success',
+            });
             form.reset();
             setOpen(false);
-            window.location.reload();
         } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Somethings went wrong',
+                description: 'Please try again later',
+            });
             console.error('Error submitting booking:', error);
             form.setError('userId', {
                 type: 'manual',
@@ -112,11 +128,14 @@ const BookingManagementPage = () => {
     };
 
     const deleteBooking = async (id: string) => {
+        setIsDeleting(id);
         try {
             await apiClient.delete(`/bookings/${id}`);
             setBookings((prev) => prev.filter((booking) => booking._id !== id));
         } catch (error) {
             console.error('Error deleting booking:', error);
+        } finally {
+            setIsDeleting(null);
         }
     };
 
@@ -218,8 +237,13 @@ const BookingManagementPage = () => {
                                     variant="destructive"
                                     size="sm"
                                     onClick={() => deleteBooking(booking._id)}
+                                    disabled={isDeleting === booking._id}
                                 >
-                                    Delete
+                                    {isDeleting === booking._id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        'Delete'
+                                    )}
                                 </Button>
                             </div>
                         </div>

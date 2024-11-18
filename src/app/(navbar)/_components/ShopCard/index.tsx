@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CircleDollarSign } from 'lucide-react';
+import { CircleDollarSign, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { z } from 'zod';
 
@@ -32,6 +32,7 @@ import {
 } from '@/common/components/base/Select';
 import Typography from '@/common/components/base/Typography';
 import { Shop } from '@/common/interface/shop';
+import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/libs/axiosConfig';
 
 interface ShopCardProps {
@@ -43,8 +44,11 @@ interface ShopCardProps {
 const ShopCard = ({ imageUrl, id, shop }: ShopCardProps) => {
     const [open, setOpen] = useState(false);
     const [showBookForm, setShowBookForm] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [error, setError] = useState('');
+
+    const { toast } = useToast();
 
     const { push } = useRouter();
 
@@ -63,7 +67,8 @@ const ShopCard = ({ imageUrl, id, shop }: ShopCardProps) => {
     });
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        console.log('values', values);
+        // console.log('values', values);
+        setIsSubmitting(true);
         try {
             // Create new booking
             await apiClient.post(`/shops/${values.shopId}/bookings`, {
@@ -74,10 +79,33 @@ const ShopCard = ({ imageUrl, id, shop }: ShopCardProps) => {
 
             form.reset();
             setOpen(false);
+            toast({
+                variant: 'success',
+                title: 'Booking success',
+            });
             push('/back-office/booking');
-        } catch (err) {
-            console.error('Error submitting booking:', err);
+        } catch (err: any) {
+            if (
+                (err.response.data.message as string).includes(
+                    'has already made 3 bookings'
+                )
+            ) {
+                setError('You have already made 3 bookings');
+                toast({
+                    variant: 'destructive',
+                    title: 'Booking failed',
+                    description: 'You have already made 3 bookings',
+                });
+                return;
+            }
+            toast({
+                variant: 'destructive',
+                title: 'Booking failed',
+                description: 'Try again later',
+            });
             setError('Something went wrong creating booking');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -226,7 +254,15 @@ const ShopCard = ({ imageUrl, id, shop }: ShopCardProps) => {
                                             </Typography>
                                         )}
                                         <div className="flex justify-end gap-2">
-                                            <Button type="submit">Book</Button>
+                                            <Button
+                                                type="submit"
+                                                disabled={isSubmitting}
+                                            >
+                                                {isSubmitting && (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                )}
+                                                Book
+                                            </Button>
                                         </div>
                                     </form>
                                 </Form>

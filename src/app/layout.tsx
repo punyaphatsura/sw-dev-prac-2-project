@@ -1,6 +1,7 @@
 import { Provider as JotaiProvider } from 'jotai';
 import type { Metadata } from 'next';
 
+import { Toaster } from '@/common/components/base/Toast/toaster';
 import QueryProvider from '@/providers/query-provider';
 
 import './globals.css';
@@ -19,7 +20,10 @@ export default function RootLayout({
         <html lang="en">
             <JotaiProvider>
                 <QueryProvider>
-                    <body className={`antialiased`}>{children}</body>
+                    <body className={`antialiased`}>
+                        <Toaster />
+                        {children}
+                    </body>
                 </QueryProvider>
             </JotaiProvider>
         </html>
