@@ -7,8 +7,8 @@ import QueryProvider from '@/providers/query-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
-    title: 'Hazefree',
-    description: 'Hazefree',
+    title: 'Massage Shop',
+    description: 'Massage Shop',
 };
 
 export default function RootLayout({
