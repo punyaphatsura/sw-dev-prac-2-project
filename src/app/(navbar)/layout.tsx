@@ -40,7 +40,6 @@ export default function RootLayout({
                     role: res.data.data.role,
                 });
             } catch (e) {
-                console.log(e);
                 push('/auth');
             }
         };

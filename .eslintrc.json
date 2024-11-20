@@ -5,6 +5,8 @@
         "plugin:@tanstack/query/recommended"
     ],
     "rules": {
-        "@typescript-eslint/no-explicit-any": 0
+        "@typescript-eslint/no-explicit-any": 0,
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": "warn"
     }
 }
